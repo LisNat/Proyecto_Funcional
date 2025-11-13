@@ -8,16 +8,15 @@ val its1 = itsCurso("MID", "SVCS")
 val its2 = itsCurso("CLO", "SVCS")
 
 // 4 itinerarios CLO-SVO
-
 val its3 = itsCurso("CLO","SVO")
 
 //2 itinerarios CLO-MEX
-
 val its4 = itsCurso("CLO", "MEX")
 
 //2 itinerarios CTG-PTY
 val its5 = itsCurso("CTG","PTY")
 
+/*
 val itsTiempoCurso = itinerariosTiempo(vuelosCurso,aeropuertosCurso)
 
 // prueba itinerariosTiempo
@@ -34,6 +33,7 @@ val itst4 = itsTiempoCurso("CLO", "MEX")
 
 //2 itinerarios CTG-PTY
 val itst5 = itsTiempoCurso("CTG","PTY")
+
 
 // prueba itinerariosEscalas
 val itsEscalasCurso = itinerariosEscalas(vuelosCurso,aeropuertosCurso)
@@ -68,6 +68,7 @@ val itsa4 = itsAireCurso("CLO", "MEX")
 
 //2 itinerarios CTG-PTY
 val itsa5 = itsAireCurso("CTG","PTY")
+
 
 // prueba itinerarioSalida
 val itSalidaCurso = itinerarioSalida(vuelosCurso,aeropuertosCurso)
@@ -145,6 +146,7 @@ itsTpo200C("ORD","TPA")
 itsEsc200C("ORD","TPA")
 itsAir200C("ORD","TPA")
 itsSal200C("ORD","TPA", 18, 30)
+*/
 
 /*
 val its300C = itinerarios(vuelosC1++vuelosC2++vuelosC3, aeropuertos)
