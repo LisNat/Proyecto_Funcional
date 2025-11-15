@@ -22,9 +22,26 @@ package object ItinerariosPar {
   }
 
   def itinerariosEscalasPar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    // recibe c1 y c2, codigos de aeropuertos
-    // y devuelve los tres (si los hay) itinerarios que minimizan el numero de cambios de avion entre esos dos aeropuertos
-    ???
+    def calcularEscalasPar(itinerario: Itinerario): Int = {
+      // 1. Suma las escalas técnicas informadas en cada vuelo
+      val escalasTecnicas = itinerario.map(_.Esc).sum
+
+      // 2. Suma las escalas de conexión (un itinerario de N vuelos tiene N-1 conexiones)
+      val escalasPorConexion = if (itinerario.isEmpty) 0 else itinerario.length - 1
+
+      escalasTecnicas + escalasPorConexion
+    }
+
+    (cod1: String, cod2: String) => {
+      // 1. Inicia la búsqueda para encontrar todos los itinerarios
+      val todosLosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
+
+      // 2. Ordena todos los itinerarios encontrados usando la función 'calcularEscalas'
+      val itinerariosOrdenados = todosLosItinerarios.sortBy(calcularEscalasPar)
+
+      // 3. Devuelve los 3 mejores (con menos escalas)
+      itinerariosOrdenados.take(3)
+    }
   }
 
   def itinerariosAirePar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {

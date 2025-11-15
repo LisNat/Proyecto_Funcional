@@ -95,58 +95,21 @@ package object Itinerarios {
 
 
   def itinerariosEscalas(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
+    def calcularEscalas(itinerario: Itinerario): Int = {
+      // 1. Suma las escalas técnicas informadas en cada vuelo
+      val escalasTecnicas = itinerario.map(_.Esc).sum
 
-    // Esta es la función que se devuelve, capturando 'vuelos' y 'aeropuertos' en su closure.
+      // 2. Suma las escalas de conexión (un itinerario de N vuelos tiene N-1 conexiones)
+      val escalasPorConexion = if (itinerario.isEmpty) 0 else itinerario.length - 1
+
+      escalasTecnicas + escalasPorConexion
+    }
+
     (cod1: String, cod2: String) => {
-
-      /**
-       * Función auxiliar para calcular el total de escalas de un itinerario específico.
-       * Suma las escalas técnicas y las escalas de conexión (cambios de avión).
-       */
-      def calcularEscalas(itinerario: Itinerario): Int = {
-        // 1. Suma las escalas técnicas informadas en cada vuelo
-        val escalasTecnicas = itinerario.map(_.Esc).sum
-
-        // 2. Suma las escalas de conexión (un itinerario de N vuelos tiene N-1 conexiones)
-        val escalasPorConexion = if (itinerario.isEmpty) 0 else itinerario.length - 1
-
-        escalasTecnicas + escalasPorConexion
-      }
-
-      /**
-       * Función recursiva (búsqueda en profundidad o DFS) para encontrar todos los caminos
-       * posibles desde 'aeropuertoActual' hasta 'aeropuertoDestino', evitando ciclos.
-       */
-      def buscarItinerarios(aeropuertoActual: String,
-                            aeropuertoDestino: String,
-                            visitados: Set[String],
-                            itinerarioActual: Itinerario): List[Itinerario] = {
-
-        // Caso base: Hemos llegado al destino
-        if (aeropuertoActual == aeropuertoDestino) {
-          List(itinerarioActual)
-        } else {
-          // Paso recursivo: Encontrar todos los vuelos que salen del aeropuerto actual
-          val vuelosDisponibles = vuelos.filter(vuelo =>
-            vuelo.Org == aeropuertoActual && !visitados.contains(vuelo.Dst) 
-          )
-
-          // Explora recursivamente cada vuelo válido
-          vuelosDisponibles.flatMap(vuelo =>
-            buscarItinerarios(
-              vuelo.Dst,                       // El nuevo aeropuerto actual
-              aeropuertoDestino,
-              visitados + aeropuertoActual,    // Marca el aeropuerto actual como visitado
-              itinerarioActual :+ vuelo        // Añade este vuelo al itinerario actual
-            )
-          )
-        }
-      }
-
       // 1. Inicia la búsqueda para encontrar todos los itinerarios
-      val todosLosItinerarios = buscarItinerarios(cod1, cod2, Set(), List())
+      val todosLosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
 
-      // 2. Ordena todos los itinerarios encontrados usando nuestra función 'calcularEscalas'
+      // 2. Ordena todos los itinerarios encontrados usando la función 'calcularEscalas'
       val itinerariosOrdenados = todosLosItinerarios.sortBy(calcularEscalas)
 
       // 3. Devuelve los 3 mejores (con menos escalas)
