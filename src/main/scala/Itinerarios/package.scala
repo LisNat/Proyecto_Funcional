@@ -131,24 +131,20 @@ package object Itinerarios {
           val dy = a2.Y - a1.Y
           math.sqrt(dx * dx + dy * dy)
         case _ =>
-          Double.MaxValue   // Si no encuentra aeropuertos, penalizar
+          Double.MaxValue
       }
     }
 
-    // Suma de distancias para un itinerario
     def distanciaTotal(it: Itinerario): Double =
       it.map(distancia).sum
 
     // Función principal que se retorna
     (cod1: String, cod2: String) => {
 
-      // 1. Obtener todos los itinerarios posibles
       val todos = itinerarios(vuelos, aeropuertos)(cod1, cod2)
 
-      // 2. Ordenar por la distancia total en el aire
       val ordenados = todos.sortBy(distanciaTotal)
-
-      // 3. Devolver los 3 mejores
+      
       ordenados.take(3)
     }
   }
