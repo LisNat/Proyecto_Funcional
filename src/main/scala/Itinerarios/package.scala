@@ -125,11 +125,88 @@ package object Itinerarios {
   }
 
   def itinerarioSalida(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String, Int, Int) => Itinerario = {
-    // Recibe vuelos, una lista de todos los vuelos disponibles y
-    // aeropuertos una lista de todos los aeropuertos
-    // y devuelve una funcion que recibe c1 y c2, codigos de aeropuertos, y h:m una hora de la cita en c2
-    // y devuelve el itinerario que optimiza la hora de salida para llegar a tiempo a la cita
-    ???
+    // Creamos mapa para búsqueda rápida de aeropuertos
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
+
+    // Función auxiliar para convertir hora local a minutos UTC
+    def convertirAMinutosUTC(hora: Int, minutos: Int, gmt: Int): Int = {
+      val gmtHoras = gmt / 100
+      val gmtMinutos = gmt % 100
+      val diferenciaGmtEnMinutos = (gmtHoras * 60) + gmtMinutos
+      val minutosLocales = hora * 60 + minutos
+      minutosLocales - diferenciaGmtEnMinutos
+    }
+
+    // Función auxiliar para obtener la hora de salida de un itinerario en minutos UTC
+    def horaSalida(itinerario: Itinerario): Int = {
+      if (itinerario.isEmpty) Int.MaxValue
+      else {
+        val primerVuelo = itinerario.head
+        aeropuertoMap.get(primerVuelo.Org) match {
+          case Some(aeropuerto) =>
+            convertirAMinutosUTC(primerVuelo.HS, primerVuelo.MS, aeropuerto.GMT)
+          case None => Int.MaxValue
+        }
+      }
+    }
+
+    // Función auxiliar para obtener la hora de llegada de un itinerario en minutos UTC
+    def horaLlegada(itinerario: Itinerario): Int = {
+      if (itinerario.isEmpty) Int.MaxValue
+      else {
+        val ultimoVuelo = itinerario.last
+        aeropuertoMap.get(ultimoVuelo.Dst) match {
+          case Some(aeropuerto) =>
+            convertirAMinutosUTC(ultimoVuelo.HL, ultimoVuelo.ML, aeropuerto.GMT)
+          case None => Int.MaxValue
+        }
+      }
+    }
+
+    // Función auxiliar para calcular el tiempo total del itinerario (para desempatar)
+    def tiempoTotal(itinerario: Itinerario): Int = {
+      if (itinerario.isEmpty) Int.MaxValue
+      else {
+        val salida = horaSalida(itinerario)
+        val llegada = horaLlegada(itinerario)
+        val duracion = llegada - salida
+        // Si la duración es negativa, significa que cruza la medianoche
+        if (duracion < 0) duracion + 24 * 60 else duracion
+      }
+    }
+
+    // Retornamos la función que calcula el itinerario con la salida más tardía
+    (cod1: String, cod2: String, h: Int, m: Int) => {
+      // Obtener todos los itinerarios posibles
+      val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+
+      // Convertir la hora de la cita a minutos UTC del aeropuerto de destino
+      val horaCitaUTC = aeropuertoMap.get(cod2) match {
+        case Some(aeropuerto) => convertirAMinutosUTC(h, m, aeropuerto.GMT)
+        case None => Int.MinValue // Si el aeropuerto no existe, ningún itinerario será válido
+      }
+
+      // Filtrar solo los itinerarios que lleguen a tiempo (antes o en el momento de la cita)
+      val itinerariosValidos = todosItinerarios.filter { itinerario =>
+        val llegada = horaLlegada(itinerario)
+        // Consideramos llegadas hasta 24 horas después por si cruza medianoche
+        llegada <= horaCitaUTC || (llegada + 24 * 60) <= horaCitaUTC
+      }
+
+      // Si no hay itinerarios válidos, retornar lista vacía
+      if (itinerariosValidos.isEmpty) {
+        List()
+      } else {
+        // Ordenar por hora de salida descendente (más tarde primero)
+        // En caso de empate, preferir el de menor tiempo total
+        val ordenados = itinerariosValidos.sortBy { itinerario =>
+          (-horaSalida(itinerario), tiempoTotal(itinerario))
+        }
+
+        // Retornar el primero (el que sale más tarde)
+        ordenados.head
+      }
+    }
   }
 
 } 
