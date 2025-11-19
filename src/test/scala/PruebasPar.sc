@@ -62,7 +62,29 @@ val itsc4 = itsEscalasCurso("CLO", "MEX")
 //2 itinerarios CTG-PTY
 val itsc5 = itsEscalasCurso("CTG","PTY")
 
-/*
+// prueba itinerariosAire
+val itsAireCurso = itinerariosAirePar(vuelosCurso,aeropuertosCurso)
+
+val itsa1 = itsAireCurso("MID", "SVCS")
+val itsa2 = itsAireCurso("CLO", "SVCS")
+
+// 4 itinerarios CLO-SVO
+val itsa3 = itsAireCurso("CLO","SVO")
+
+//2 itinerarios CLO-MEX
+val itsa4 = itsAireCurso("CLO", "MEX")
+
+//2 itinerarios CTG-PTY
+val itsa5 = itsAireCurso("CTG","PTY")
+
+
+// prueba itinerarioSalida
+val itSalidaCurso = itinerarioSalidaPar(vuelosCurso,aeropuertosCurso)
+
+val itsal1 = itSalidaCurso("CTG","PTY",11, 40)
+val itsal2 = itSalidaCurso("CTG","PTY",11, 55)
+val itsal3 = itSalidaCurso("CTG","PTY",10, 30)
+
 val itsPar15A1 = itinerariosPar(vuelosA1,aeropuertos)
 val itsTpoPar15A1 = itinerariosTiempoPar(vuelosA1,aeropuertos)
 val itsEscPar15A1 = itinerariosEscalasPar(vuelosA1,aeropuertos)
@@ -116,4 +138,3 @@ its400CPar("ORD","TPA")
 
 val its500CPar = itinerariosPar((vuelosC1++vuelosC2++vuelosC3++vuelosC4++vuelosC5), aeropuertos)
 its500CPar("ORD","TPA")
-*/

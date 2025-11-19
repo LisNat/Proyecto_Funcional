@@ -10,22 +10,22 @@ package object Datos {
 
   val aeropuertosCurso = List(
 
-    Aeropuerto("CLO", 100, 200, -500), // Cali
-    Aeropuerto("BOG", 300, 500, -500), // Bogotá
+    Aeropuerto("CLO", 100, 200, -500), // Cali, GMT -5:00 (300 min)
+    Aeropuerto("BOG", 300, 500, -500), // Bogotá, GMT -5:00 (300 min)
     Aeropuerto("MDE", 200, 600, -500), // Medellín
     Aeropuerto("BAQ", 350, 850, -500), // Barranquilla
     Aeropuerto("SMR", 400, 950, -500), // Santa Marta
     Aeropuerto("CTG", 300, 800, -500), // Cartagena
     Aeropuerto("PTY", 400, 1000, -500), // Ciudad de Panamá
-    Aeropuerto("JFK", 2000, 2000, -400), // Nueva York
+    Aeropuerto("JFK", 2000, 2000, -400), // Nueva York, GMT -4:00 (240 min)
     Aeropuerto("MIA", 1000, 2000, -500), // Miami
     Aeropuerto("MEX", 1000, 1000, -600), // Ciudad de México
-    Aeropuerto("MAD", 5000, 5000, 100), // Madrid
+    Aeropuerto("MAD", 5000, 5000, 100), // Madrid, GMT +1:00 (60 min)
     Aeropuerto("SVCS", 400, 1000, -600), // Caracas
     Aeropuerto("MID", 500, 100, -600), // Merida
     Aeropuerto("AUA", 500, 2000, -400), // Aruba
     Aeropuerto("IST", 9000, 9000, 300), // Estambul
-    Aeropuerto("HND", 10000, 12000, 900), // Tokio
+    Aeropuerto("HND", 10000, 12000, 900), // Tokio, GMT +9:00 (540 min)
     Aeropuerto("DXB", 9500, 11500, 400), // Dubai
     Aeropuerto("SVO", 12500, 12500, 300) // Moscú
   )
