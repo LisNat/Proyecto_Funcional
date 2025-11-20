@@ -33,7 +33,7 @@ val itst4 = itsTiempoCurso("CLO", "MEX")
 //2 itinerarios CTG-PTY
 val itst5 = itsTiempoCurso("CTG","PTY")
 
-
+/*
 // prueba itinerariosEscalas
 val itsEscalasCurso = itinerariosEscalas(vuelosCurso,aeropuertosCurso)
 
@@ -50,7 +50,7 @@ val itsc4 = itsEscalasCurso("CLO", "MEX")
 
 //2 itinerarios CTG-PTY
 val itsc5 = itsEscalasCurso("CTG","PTY")
-*/
+
 // prueba itinerariosAire
 val itsAireCurso = itinerariosAire(vuelosCurso,aeropuertosCurso)
 
@@ -68,7 +68,7 @@ val itsa4 = itsAireCurso("CLO", "MEX")
 //2 itinerarios CTG-PTY
 val itsa5 = itsAireCurso("CTG","PTY")
 
-/*
+
 // prueba itinerarioSalida
 val itSalidaCurso = itinerarioSalida(vuelosCurso,aeropuertosCurso)
 
