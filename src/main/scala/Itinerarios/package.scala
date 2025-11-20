@@ -1,4 +1,5 @@
 import Datos._
+import scala.collection.parallel.CollectionConverters._
 package object Itinerarios {
 
   def itinerarios(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
@@ -148,6 +149,51 @@ package object Itinerarios {
       ordenados.take(3)
     }
   }
+
+  def itinerariosAirePar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
+
+    // Mapa inmutable para acceso rápido a aeropuertos (seguro para paralelismo)
+    val aeropuertoMap: Map[String, Aeropuerto] = aeropuertos.map(a => a.Cod -> a).toMap
+
+    // Distancia euclidiana entre origen y destino del vuelo (double)
+    def distancia(vuelo: Vuelo): Double = {
+      (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
+        case (Some(a1), Some(a2)) =>
+          val dx = a2.X - a1.X
+          val dy = a2.Y - a1.Y
+          math.sqrt(dx * dx + dy * dy)
+        case _ =>
+          Double.MaxValue
+      }
+    }
+
+    // Distancia total de un itinerario: sumas de distancias de cada vuelo.
+    // Aquí usamos paralelismo interno sobre los vuelos del itinerario.
+    def distanciaTotal(it: Itinerario): Double =
+      if (it.isEmpty) 0.0
+      else it.par.map(distancia).sum
+
+    // Función devuelta
+    (cod1: String, cod2: String) => {
+      // calculamos todos los itinerarios secuencialmente (reutiliza tu función existente)
+      val todosItinerarios: List[Itinerario] = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+
+      // si no hay itinerarios, devolvemos vacío
+      if (todosItinerarios.isEmpty) List.empty[Itinerario]
+      else {
+        // mapeamos cada itinerario a su distancia en paralelo (paralelismo de tareas sobre itinerarios)
+        val paresPar: Seq[(Itinerario, Double)] =
+          todosItinerarios.par.map(it => (it, distanciaTotal(it))).toList // .par crea ParSeq, .toList lo convierte a Seq
+
+        // ordenamos por distancia (operación ligera y estable) y tomamos los 3 mejores
+        val mejoresOrdenados: Seq[Itinerario] =
+          paresPar.toSeq.sortBy(_._2).take(3).map(_._1)
+
+        mejoresOrdenados.toList
+      }
+    }
+  }
+
 
 
   def itinerarioSalida(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String, Int, Int) => Itinerario = {

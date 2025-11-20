@@ -3,9 +3,15 @@
   <component name="ScalaCompilerConfiguration">
     <option name="separateProdTestSources" value="true" />
     <profile name="sbt 1" modules="Proyecto_PFuncional,Taller_Concurrencia" />
-    <profile name="sbt 2" modules="Proyecto_PFuncional.main,Proyecto_PFuncional.test,Taller_Concurrencia.main,Taller_Concurrencia.test">
+    <profile name="sbt 2" modules="Taller_Concurrencia.main,Taller_Concurrencia.test">
       <option name="implicitConversions" value="true" />
       <option name="deprecationWarnings" value="true" />
+    </profile>
+    <profile name="sbt 3" modules="Proyecto_PFuncional.main,Proyecto_PFuncional.test">
+      <option name="implicitConversions" value="true" />
+      <option name="deprecationWarnings" value="true" />
+      <option name="uncheckedWarnings" value="true" />
+      <option name="featureWarnings" value="true" />
     </profile>
   </component>
 </project>

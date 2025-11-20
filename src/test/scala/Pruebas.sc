@@ -2,6 +2,7 @@ import Datos._
 import Itinerarios._
 
 // Ejemplo curso pequeño
+/*
 val itsCurso = itinerarios(vuelosCurso,aeropuertosCurso)
 //2.1 Aeropuertos incomunicados
 val its1 = itsCurso("MID", "SVCS")
@@ -49,7 +50,7 @@ val itsc4 = itsEscalasCurso("CLO", "MEX")
 
 //2 itinerarios CTG-PTY
 val itsc5 = itsEscalasCurso("CTG","PTY")
-
+*/
 // prueba itinerariosAire
 val itsAireCurso = itinerariosAire(vuelosCurso,aeropuertosCurso)
 
