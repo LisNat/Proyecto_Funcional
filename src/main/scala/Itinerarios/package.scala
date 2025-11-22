@@ -133,31 +133,30 @@ package object Itinerarios {
   }
 
   def itinerariosAire(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    val aeropuertoMap: Map[String, Aeropuerto] =
-      aeropuertos.map(a => a.Cod -> a).toMap
 
-    // Función para calcular distancia Euclidiana entre dos aeropuertos
-    def distancia(vuelo: Vuelo): Double = {
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
+
+    def duracionVuelo(vuelo: Vuelo): Int = {
       (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
-        case (Some(a1), Some(a2)) =>
-          val dx = a2.X - a1.X
-          val dy = a2.Y - a1.Y
-          math.sqrt(dx * dx + dy * dy)
+        case (Some(origen), Some(destino)) =>
+          val salidaGMT = convertirAMinutosUTC(vuelo.HS, vuelo.MS, origen.GMT)
+          val llegadaGMT = convertirAMinutosUTC(vuelo.HL, vuelo.ML, destino.GMT)
+          val duracion = llegadaGMT - salidaGMT
+          if (duracion < 0) duracion + 24 * 60 else duracion
         case _ =>
-          Double.MaxValue
+          Int.MaxValue
       }
     }
 
-    def distanciaTotal(it: Itinerario): Double =
-      it.map(distancia).sum
+    def tiempoEnAireTotal(it: Itinerario): Int =
+      it.map(duracionVuelo).sum
 
-    // Función principal que se retorna
     (cod1: String, cod2: String) => {
       val todos = itinerarios(vuelos, aeropuertos)(cod1, cod2)
-      val ordenados = todos.sortBy(distanciaTotal)
-      ordenados.take(3)
+      todos.sortBy(tiempoEnAireTotal).take(3)
     }
   }
+
 
   def itinerarioSalida(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String, Int, Int) => Itinerario = {
     // y devuelve una funcion que recibe c1 y c2, codigos de aeropuertos, y h:m una hora de la cita en c2

@@ -133,29 +133,42 @@ package object ItinerariosPar {
   }
 
   def itinerariosAirePar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    val aeropuertoMap: Map[String, Aeropuerto] =
-      aeropuertos.map(a => a.Cod -> a).toMap
+    // Mapa inmutable para acceso rápido
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
 
-    // Función para calcular distancia Euclidiana entre dos aeropuertos
-    def distancia(vuelo: Vuelo): Double = {
+    // Tiempo de vuelo real entre dos aeropuertos
+    def duracionVuelo(vuelo: Vuelo): Int = {
       (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
-        case (Some(a1), Some(a2)) =>
-          val dx = a2.X - a1.X
-          val dy = a2.Y - a1.Y
-          math.sqrt(dx * dx + dy * dy)
+        case (Some(origen), Some(destino)) =>
+          val salidaUTC = convertirAMinutosUTC(vuelo.HS, vuelo.MS, origen.GMT)
+          val llegadaUTC = convertirAMinutosUTC(vuelo.HL, vuelo.ML, destino.GMT)
+          val d = llegadaUTC - salidaUTC
+          if (d < 0) d + 24 * 60 else d
         case _ =>
-          Double.MaxValue
+          Int.MaxValue
       }
     }
 
-    def distanciaTotal(it: Itinerario): Double =
-      it.map(distancia).sum
+    // Tiempo total en aire de un itinerario
+    // PARALLEL HERE → calcula duración de cada vuelo en paralelo
+    def tiempoEnAireTotal(it: Itinerario): Int =
+      it.par.map(duracionVuelo).sum
 
-    // Función principal que se retorna
+    // Función que se retorna
     (cod1: String, cod2: String) => {
+
+      // Obtener itinerarios secuencialmente (el proyecto NO pide paralelizar esta parte)
       val todos = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
-      val ordenados = todos.sortBy(distanciaTotal)
-      ordenados.take(3)
+
+      // SEGUNDO NIVEL DE PARALELISMO → calcular tiempos en paralelo para cada itinerario
+      val tiemposPar =
+        todos.par.map(it => (it, tiempoEnAireTotal(it))).toList
+
+      // Ordenamos secuencialmente (colección ya pequeña)
+      val ordenados =
+        tiemposPar.sortBy(_._2).take(3).map(_._1)
+
+      ordenados
     }
   }
 
