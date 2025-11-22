@@ -134,75 +134,72 @@ package object Itinerarios {
   }
 
   def itinerariosAire(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    val aeropuertoMap: Map[String, Aeropuerto] =
-      aeropuertos.map(a => a.Cod -> a).toMap
 
-    // Función para calcular distancia Euclidiana entre dos aeropuertos
-    def distancia(vuelo: Vuelo): Double = {
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
+
+    def duracionVuelo(vuelo: Vuelo): Int = {
       (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
-        case (Some(a1), Some(a2)) =>
-          val dx = a2.X - a1.X
-          val dy = a2.Y - a1.Y
-          math.sqrt(dx * dx + dy * dy)
+        case (Some(origen), Some(destino)) =>
+          val salidaGMT = convertirAMinutosUTC(vuelo.HS, vuelo.MS, origen.GMT)
+          val llegadaGMT = convertirAMinutosUTC(vuelo.HL, vuelo.ML, destino.GMT)
+          val duracion = llegadaGMT - salidaGMT
+          if (duracion < 0) duracion + 24 * 60 else duracion
         case _ =>
-          Double.MaxValue
+          Int.MaxValue
       }
     }
 
-    def distanciaTotal(it: Itinerario): Double =
-      it.map(distancia).sum
+    def tiempoEnAireTotal(it: Itinerario): Int =
+      it.map(duracionVuelo).sum
 
-    // Función principal que se retorna
     (cod1: String, cod2: String) => {
       val todos = itinerarios(vuelos, aeropuertos)(cod1, cod2)
-      val ordenados = todos.sortBy(distanciaTotal)
-      ordenados.take(3)
+      todos.sortBy(tiempoEnAireTotal).take(3)
     }
   }
 
   def itinerariosAirePar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
+    import scala.collection.parallel.CollectionConverters._
 
-    // Mapa inmutable para acceso rápido a aeropuertos (seguro para paralelismo)
-    val aeropuertoMap: Map[String, Aeropuerto] = aeropuertos.map(a => a.Cod -> a).toMap
+    // Mapa inmutable para acceso rápido
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
 
-    // Distancia euclidiana entre origen y destino del vuelo (double)
-    def distancia(vuelo: Vuelo): Double = {
+    // Tiempo de vuelo real entre dos aeropuertos
+    def duracionVuelo(vuelo: Vuelo): Int = {
       (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
-        case (Some(a1), Some(a2)) =>
-          val dx = a2.X - a1.X
-          val dy = a2.Y - a1.Y
-          math.sqrt(dx * dx + dy * dy)
+        case (Some(origen), Some(destino)) =>
+          val salidaUTC = convertirAMinutosUTC(vuelo.HS, vuelo.MS, origen.GMT)
+          val llegadaUTC = convertirAMinutosUTC(vuelo.HL, vuelo.ML, destino.GMT)
+          val d = llegadaUTC - salidaUTC
+          if (d < 0) d + 24 * 60 else d
         case _ =>
-          Double.MaxValue
+          Int.MaxValue
       }
     }
 
-    // Distancia total de un itinerario: sumas de distancias de cada vuelo.
-    // Aquí usamos paralelismo interno sobre los vuelos del itinerario.
-    def distanciaTotal(it: Itinerario): Double =
-      if (it.isEmpty) 0.0
-      else it.par.map(distancia).sum
+    // Tiempo total en aire de un itinerario
+    // PARALLEL HERE → calcula duración de cada vuelo en paralelo
+    def tiempoEnAireTotal(it: Itinerario): Int =
+      it.par.map(duracionVuelo).sum
 
-    // Función devuelta
+    // Función que se retorna
     (cod1: String, cod2: String) => {
-      // calculamos todos los itinerarios secuencialmente (reutiliza tu función existente)
-      val todosItinerarios: List[Itinerario] = itinerarios(vuelos, aeropuertos)(cod1, cod2)
 
-      // si no hay itinerarios, devolvemos vacío
-      if (todosItinerarios.isEmpty) List.empty[Itinerario]
-      else {
-        // mapeamos cada itinerario a su distancia en paralelo (paralelismo de tareas sobre itinerarios)
-        val paresPar: Seq[(Itinerario, Double)] =
-          todosItinerarios.par.map(it => (it, distanciaTotal(it))).toList // .par crea ParSeq, .toList lo convierte a Seq
+      // Obtener itinerarios secuencialmente (el proyecto NO pide paralelizar esta parte)
+      val todos = itinerarios(vuelos, aeropuertos)(cod1, cod2)
 
-        // ordenamos por distancia (operación ligera y estable) y tomamos los 3 mejores
-        val mejoresOrdenados: Seq[Itinerario] =
-          paresPar.toSeq.sortBy(_._2).take(3).map(_._1)
+      // SEGUNDO NIVEL DE PARALELISMO → calcular tiempos en paralelo para cada itinerario
+      val tiemposPar =
+        todos.par.map(it => (it, tiempoEnAireTotal(it))).toList
 
-        mejoresOrdenados.toList
-      }
+      // Ordenamos secuencialmente (colección ya pequeña)
+      val ordenados =
+        tiemposPar.sortBy(_._2).take(3).map(_._1)
+
+      ordenados
     }
   }
+
 
 
 

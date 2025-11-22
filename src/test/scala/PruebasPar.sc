@@ -1,6 +1,6 @@
 import Datos._
 import ItinerariosPar._
-// import scala.util.Random
+import scala.util.Random
 import org.scalameter._
 
 def tiempoDe[T](body: => T) = {
@@ -12,7 +12,7 @@ def tiempoDe[T](body: => T) = {
   timeA1
 }
 
-// val random = new Random()
+val random = new Random()
 
 // Ejemplo curso pequeño
 val itsCursoPar = itinerariosPar(vuelosCurso,aeropuertosCurso)
