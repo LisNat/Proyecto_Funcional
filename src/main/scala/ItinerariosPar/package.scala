@@ -103,9 +103,24 @@ package object ItinerariosPar {
     }
     // Retornamos la función que calcula los itinerarios con menor tiempo
     (cod1: String, cod2: String) => {
+      // Obtener itinerarios con la versión paralela
       val todosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
-      // Ordenamos por tiempo total y tomamos los primeros 3
-      todosItinerarios.sortBy(calcularTiempoTotal).take(3)
+
+      // Si hay pocos itinerarios, mejor secuencial
+      if (todosItinerarios.size <= 2)
+        todosItinerarios.sortBy(calcularTiempoTotal).take(3)
+      else {
+        // Paralelizamos el cálculo del tiempo de *cada itinerario*
+        val tasks = todosItinerarios.map { it =>
+          task {
+            (it, calcularTiempoTotal(it))
+          }
+        }
+        // Recoger resultados
+        val resultados = tasks.map(_.join())
+        // Ordenar por tiempo total
+        resultados.sortBy(_._2).map(_._1).take(3)
+      }
     }
   }
 
@@ -235,28 +250,38 @@ package object ItinerariosPar {
         case None => Int.MinValue // Si el aeropuerto no existe, ningún itinerario será válido
       }
 
-      // Filtrar solo los itinerarios que lleguen a tiempo (antes o en el momento de la cita)
-      val itinerariosValidos = todosItinerarios.filter { itinerario =>
-        val llegada = horaLlegada(itinerario)
-        // Consideramos llegadas hasta 24 horas después por si cruza medianoche
-        llegada <= horaCitaUTC || (llegada + 24 * 60) <= horaCitaUTC
+      // Función para calcular cuántos "días antes" llega un itinerario
+      // Retorna: 0 = mismo día, 1 = día anterior, 2 = dos días antes, etc.
+      def diasAntes(llegada: Int, cita: Int): Int = {
+        if (llegada <= cita) 0  // Llega el mismo día antes de la cita
+        else {
+          // Necesita llegar días antes
+          val diff = llegada - cita
+          val dias = (diff / (24 * 60)) + 1
+          dias
+        }
       }
 
 
-      // Si no hay itinerarios válidos, retornar lista vacía
-      if (itinerariosValidos.isEmpty) {
+      // Si no hay itinerarios, retornar lista vacía
+      if (todosItinerarios.isEmpty) {
         List()
       } else {
-        // Ordenar por hora de salida descendente (más tarde primero)
-        // En caso de empate, preferir el de menor tiempo total
-        val ordenados = itinerariosValidos.sortBy { itinerario =>
-          (-horaSalida(itinerario), tiempoTotal(itinerario))
+        // Ordenar por:
+        // 1. Mínimo número de días antes (0 es mejor que 1, 1 es mejor que 2)
+        // 2. Hora de salida más tardía (descendente)
+        // 3. Tiempo total menor (desempate)
+        val ordenados = todosItinerarios.sortBy { itinerario =>
+          val llegada = horaLlegada(itinerario)
+          val dias = diasAntes(llegada, horaCitaUTC)
+          (dias, -horaSalida(itinerario), tiempoTotal(itinerario))
         }
 
-        // Retornar el primero (el que sale más tarde)
+        // Retornar el primero (el óptimo)
         ordenados.head
       }
     }
   }
+
 
 }
