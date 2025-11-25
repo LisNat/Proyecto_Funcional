@@ -137,13 +137,20 @@ package object ItinerariosPar {
 
     (cod1: String, cod2: String) => {
       // 1. Inicia la búsqueda para encontrar todos los itinerarios
-      val todosLosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
+      val todosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
 
-      // 2. Ordena todos los itinerarios encontrados usando la función 'calcularEscalas'
-      val itinerariosOrdenados = todosLosItinerarios.sortBy(calcularEscalasPar)
+      // 2. Calcular el puntaje de escalas en paralelo usando 'task'
+      val tasks = todosItinerarios.map { it =>
+        task {
+          (it, calcularEscalasPar(it))
+        }
+      }
 
-      // 3. Devuelve los 3 mejores (con menos escalas)
-      itinerariosOrdenados.take(3)
+      // 3. Recoger resultados (join)
+      val resultados = tasks.map(_.join())
+
+      // 4. Ordenar por número de escalas (segundo elemento de la tupla) y tomar los 3 mejores
+      resultados.sortBy(_._2).map(_._1).take(3)
     }
   }
 
@@ -264,24 +271,29 @@ package object ItinerariosPar {
 
 
       // Si no hay itinerarios, retornar lista vacía
-      if (todosItinerarios.isEmpty) {
-        List()
-      } else {
-        // Ordenar por:
-        // 1. Mínimo número de días antes (0 es mejor que 1, 1 es mejor que 2)
-        // 2. Hora de salida más tardía (descendente)
-        // 3. Tiempo total menor (desempate)
-        val ordenados = todosItinerarios.sortBy { itinerario =>
-          val llegada = horaLlegada(itinerario)
-          val dias = diasAntes(llegada, horaCitaUTC)
-          (dias, -horaSalida(itinerario), tiempoTotal(itinerario))
+      if (todosItinerarios.isEmpty) List()
+      else {
+        // Calculamos los criterios de ordenamiento en paralelo
+        val tasks = todosItinerarios.map { it =>
+          task {
+            val llegada = horaLlegada(it)
+            val salida = horaSalida(it)
+            val duracion = tiempoTotal(it)
+            val dias = diasAntes(llegada, horaCitaUTC)
+
+            // Retornamos el itinerario junto con la tupla de comparación
+            (it, (dias, -salida, duracion))
+          }
         }
 
-        // Retornar el primero (el óptimo)
-        ordenados.head
+        val resultados = tasks.map(_.join())
+
+        // Ordenamos por la tupla pre-calculada y devolvemos el mejor itinerario
+        resultados.sortBy(_._2).head._1
       }
     }
   }
+
 
 
 }
