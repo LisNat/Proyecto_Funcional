@@ -5,16 +5,10 @@ package object Itinerarios {
     val vuelosPorOrigen = vuelos.groupBy(_.Org)
     val codsValidos = aeropuertos.map(_.Cod).toSet
 
-    // Añadimos límite de conexiones para prevenir OUT OF MEMORY
-    val MAX_CONEXIONES = 4
-
     // Función recursiva que busca todos los itinerarios desde un aeropuerto de origen (cod1) hasta un destino (cod2)
-    def buscarItinerarios(cod1: String, cod2: String, visitados: Set[String], conexiones: Int): List[Itinerario] = {
+    def buscarItinerarios(cod1: String, cod2: String, visitados: Set[String]): List[Itinerario] = {
       if (cod1 == cod2) {
         List(Nil)
-      } // CONDICIÓN DE PARADA: Si excedemos las conexiones, devolvemos List()
-      else if (conexiones >= MAX_CONEXIONES) {
-        List()
       } else {
         // Obtenemos los vuelos que salen del aeropuerto actual
         val vuelosSalientes = vuelosPorOrigen.getOrElse(cod1, Nil)
@@ -24,7 +18,7 @@ package object Itinerarios {
         // Exploramos recursivamente los destinos posibles, concatenando el vuelo actual con el resto del itinerario
         for {
           vuelo <- vuelosValidos
-          resto <- buscarItinerarios(vuelo.Dst, cod2, visitados + cod1, conexiones + 1)
+          resto <- buscarItinerarios(vuelo.Dst, cod2, visitados + cod1)
         } yield vuelo :: resto
       }
     }
@@ -36,7 +30,7 @@ package object Itinerarios {
         List()
       } else {
         // Si es válido, tons iniciamos la búsqueda recursiva desde el aeropuerto de origen hacia el destino
-        buscarItinerarios(cod1, cod2, Set(), 0)
+        buscarItinerarios(cod1, cod2, Set())
       }
     }
   }
@@ -241,6 +235,5 @@ package object Itinerarios {
       }
     }
   }
-
 
 } 

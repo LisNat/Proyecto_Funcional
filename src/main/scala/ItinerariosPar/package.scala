@@ -10,16 +10,10 @@ package object ItinerariosPar {
     val vuelosPorOrigen = vuelos.groupBy(_.Org)
     val codsValidos = aeropuertos.map(_.Cod).toSet
 
-    // Añadimos límite de conexiones para prevenir OUT OF MEMORY
-    val MAX_CONEXIONES = 4
-
-    def buscarItinerariosPar(cod1: String, cod2: String, visitados: Set[String], conexiones: Int): List[Itinerario] = {
+    def buscarItinerariosPar(cod1: String, cod2: String, visitados: Set[String]): List[Itinerario] = {
       // Caso base: llegó al destino
       if (cod1 == cod2) {
         List(Nil)
-      } // CONDICIÓN DE PARADA: Si excedemos las conexiones, devolvemos List()
-      else if (conexiones >= MAX_CONEXIONES) {
-        List()
       } else {
         val vuelosSalientes = vuelosPorOrigen.getOrElse(cod1, Nil)
         val vuelosValidos = vuelosSalientes.filter(v => !visitados.contains(v.Dst))
@@ -28,13 +22,13 @@ package object ItinerariosPar {
         if (vuelosValidos.length <= 1) {
           for {
             vuelo <- vuelosValidos
-            resto <- buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1, conexiones + 1)
+            resto <- buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1)
           } yield vuelo :: resto
         } else {
           // Cada vuelo se procesa en su propia tarea.
           val tasks = for (vuelo <- vuelosValidos)
             yield task {
-              val subItinerarios = buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1, conexiones + 1)
+              val subItinerarios = buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1)
               subItinerarios.map(resto => vuelo :: resto)
             }
           (for (t <- tasks) yield t.join()).flatten
@@ -46,7 +40,7 @@ package object ItinerariosPar {
       if (!codsValidos.contains(cod1) || !codsValidos.contains(cod2)) {
         List()
       } else {
-        buscarItinerariosPar(cod1, cod2, Set(), 0)
+        buscarItinerariosPar(cod1, cod2, Set())
       }
     }
   }
@@ -293,7 +287,4 @@ package object ItinerariosPar {
       }
     }
   }
-
-
-
 }

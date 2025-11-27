@@ -14,3 +14,4 @@ libraryDependencies ++= Seq(
 )
 libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4"
 libraryDependencies += "org.plotly-scala" %% "plotly-render" % "0.8.3"
+sbt -J-Xmx4G runsbt -J-Xmx4G run
