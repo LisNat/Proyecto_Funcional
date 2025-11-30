@@ -9,7 +9,6 @@ package object Datos {
   type ItinerarioPar = ParSeq[Vuelo]
 
   val aeropuertosCurso = List(
-
     Aeropuerto("CLO", 100, 200, -500), // Cali, GMT -5:00 (300 min)
     Aeropuerto("BOG", 300, 500, -500), // Bogotá, GMT -5:00 (300 min)
     Aeropuerto("MDE", 200, 600, -500), // Medellín
@@ -79,7 +78,7 @@ package object Datos {
     Aeropuerto("TPA", 500, 360, -600)
   )
 
- /* val vuelos=List(
+/*  val vuelos=List(
     Vuelo("4X", 373, "HOU", 13, 15, "MSY", 15, 10, 1),
     Vuelo("4X", 201, "MSY", 8, 35, "HOU", 12, 20, 2),
     Vuelo("4X", 372, "MSY", 11, 0, "HOU", 12, 55, 1),
@@ -2977,11 +2976,21 @@ package object Datos {
     Vuelo("ZK", 403, "DEN", 11, 20, "ORD", 17, 20, 4),
     Vuelo("ZK", 38, "MSP", 16, 20, "ORD", 19, 5, 2),
     Vuelo("ZK", 76, "DEN", 8, 45, "ORD", 15, 15, 5)
-  )*/
-
+  )
+*/
   //________________________________________________________
 
   //longitud 15
+
+  val vuelosAA1= List(
+    Vuelo("4X", 373, "HOU", 13, 15, "MSY", 15, 10, 1),
+    Vuelo("4X", 201, "MSY", 8, 35, "HOU", 12, 20, 2),
+    Vuelo("4X", 372, "MSY", 11, 0, "HOU", 12, 55, 1),
+    Vuelo("4X", 213, "MSY", 14, 0, "HOU", 17, 40, 3),
+    Vuelo("4X", 374, "MSY", 16, 0, "HOU", 17, 55, 1),
+    Vuelo("4X", 216, "HOU", 14, 30, "MSY", 18, 10, 3),
+  )
+
 
   val vuelosA1= List(
     Vuelo("4X", 373, "HOU", 13, 15, "MSY", 15, 10, 1),
@@ -4316,6 +4325,7 @@ package object Datos {
     Vuelo("PA", 978, "MIA", 17, 40, "DCA", 10, 15, 0),
     Vuelo("PA", 436, "MIA", 17, 35, "BOS", 10, 56, 0)
   )
+}
 
 /*  val vuelosD2= List(
     Vuelo("PA", 427, "JFK", 14, 45, "MIA", 17, 57, 0),
@@ -5321,5 +5331,6 @@ package object Datos {
     Vuelo("WN", 603, "LAX", 7, 0, "BNA", 13, 55, 1),
     Vuelo("WN", 663, "STL", 21, 20, "HOU", 13, 15, 0),
     Vuelo("WN", 952, "LAX", 11, 15, "PHX", 13, 25, 0)
-  )*/
+  )
 }
+*/

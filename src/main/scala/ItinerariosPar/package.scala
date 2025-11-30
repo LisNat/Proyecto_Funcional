@@ -10,16 +10,10 @@ package object ItinerariosPar {
     val vuelosPorOrigen = vuelos.groupBy(_.Org)
     val codsValidos = aeropuertos.map(_.Cod).toSet
 
-    // Añadimos límite de conexiones para prevenir OUT OF MEMORY
-    val MAX_CONEXIONES = 4
-
-    def buscarItinerariosPar(cod1: String, cod2: String, visitados: Set[String], conexiones: Int): List[Itinerario] = {
+    def buscarItinerariosPar(cod1: String, cod2: String, visitados: Set[String]): List[Itinerario] = {
       // Caso base: llegó al destino
       if (cod1 == cod2) {
         List(Nil)
-      } // CONDICIÓN DE PARADA: Si excedemos las conexiones, devolvemos List()
-      else if (conexiones >= MAX_CONEXIONES) {
-        List()
       } else {
         val vuelosSalientes = vuelosPorOrigen.getOrElse(cod1, Nil)
         val vuelosValidos = vuelosSalientes.filter(v => !visitados.contains(v.Dst))
@@ -28,13 +22,13 @@ package object ItinerariosPar {
         if (vuelosValidos.length <= 1) {
           for {
             vuelo <- vuelosValidos
-            resto <- buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1, conexiones + 1)
+            resto <- buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1)
           } yield vuelo :: resto
         } else {
           // Cada vuelo se procesa en su propia tarea.
           val tasks = for (vuelo <- vuelosValidos)
             yield task {
-              val subItinerarios = buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1, conexiones + 1)
+              val subItinerarios = buscarItinerariosPar(vuelo.Dst, cod2, visitados + cod1)
               subItinerarios.map(resto => vuelo :: resto)
             }
           (for (t <- tasks) yield t.join()).flatten
@@ -46,7 +40,7 @@ package object ItinerariosPar {
       if (!codsValidos.contains(cod1) || !codsValidos.contains(cod2)) {
         List()
       } else {
-        buscarItinerariosPar(cod1, cod2, Set(), 0)
+        buscarItinerariosPar(cod1, cod2, Set())
       }
     }
   }
@@ -103,9 +97,24 @@ package object ItinerariosPar {
     }
     // Retornamos la función que calcula los itinerarios con menor tiempo
     (cod1: String, cod2: String) => {
+      // Obtener itinerarios con la versión paralela
       val todosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
-      // Ordenamos por tiempo total y tomamos los primeros 3
-      todosItinerarios.sortBy(calcularTiempoTotal).take(3)
+
+      // Si hay pocos itinerarios, mejor secuencial
+      if (todosItinerarios.size <= 2)
+        todosItinerarios.sortBy(calcularTiempoTotal).take(3)
+      else {
+        // Paralelizamos el cálculo del tiempo de *cada itinerario*
+        val tasks = todosItinerarios.map { it =>
+          task {
+            (it, calcularTiempoTotal(it))
+          }
+        }
+        // Recoger resultados
+        val resultados = tasks.map(_.join())
+        // Ordenar por tiempo total
+        resultados.sortBy(_._2).map(_._1).take(3)
+      }
     }
   }
 
@@ -122,40 +131,60 @@ package object ItinerariosPar {
 
     (cod1: String, cod2: String) => {
       // 1. Inicia la búsqueda para encontrar todos los itinerarios
-      val todosLosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
+      val todosItinerarios = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
 
-      // 2. Ordena todos los itinerarios encontrados usando la función 'calcularEscalas'
-      val itinerariosOrdenados = todosLosItinerarios.sortBy(calcularEscalasPar)
+      // 2. Calcular el puntaje de escalas en paralelo usando 'task'
+      val tasks = todosItinerarios.map { it =>
+        task {
+          (it, calcularEscalasPar(it))
+        }
+      }
 
-      // 3. Devuelve los 3 mejores (con menos escalas)
-      itinerariosOrdenados.take(3)
+      // 3. Recoger resultados (join)
+      val resultados = tasks.map(_.join())
+
+      // 4. Ordenar por número de escalas (segundo elemento de la tupla) y tomar los 3 mejores
+      resultados.sortBy(_._2).map(_._1).take(3)
     }
   }
 
   def itinerariosAirePar(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    val aeropuertoMap: Map[String, Aeropuerto] =
-      aeropuertos.map(a => a.Cod -> a).toMap
+    // Mapa inmutable para acceso rápido
+    val aeropuertoMap = aeropuertos.map(a => a.Cod -> a).toMap
 
-    // Función para calcular distancia Euclidiana entre dos aeropuertos
-    def distancia(vuelo: Vuelo): Double = {
+    // Tiempo de vuelo real entre dos aeropuertos
+    def duracionVuelo(vuelo: Vuelo): Int = {
       (aeropuertoMap.get(vuelo.Org), aeropuertoMap.get(vuelo.Dst)) match {
-        case (Some(a1), Some(a2)) =>
-          val dx = a2.X - a1.X
-          val dy = a2.Y - a1.Y
-          math.sqrt(dx * dx + dy * dy)
+        case (Some(origen), Some(destino)) =>
+          val salidaUTC = convertirAMinutosUTC(vuelo.HS, vuelo.MS, origen.GMT)
+          val llegadaUTC = convertirAMinutosUTC(vuelo.HL, vuelo.ML, destino.GMT)
+          val d = llegadaUTC - salidaUTC
+          if (d < 0) d + 24 * 60 else d
         case _ =>
-          Double.MaxValue
+          Int.MaxValue
       }
     }
 
-    def distanciaTotal(it: Itinerario): Double =
-      it.map(distancia).sum
+    // Tiempo total en aire de un itinerario
+    // PARALLEL HERE → calcula duración de cada vuelo en paralelo
+    def tiempoEnAireTotal(it: Itinerario): Int =
+      it.par.map(duracionVuelo).sum
 
-    // Función principal que se retorna
+    // Función que se retorna
     (cod1: String, cod2: String) => {
+
+      // Obtener itinerarios secuencialmente (el proyecto NO pide paralelizar esta parte)
       val todos = itinerariosPar(vuelos, aeropuertos)(cod1, cod2)
-      val ordenados = todos.sortBy(distanciaTotal)
-      ordenados.take(3)
+
+      // SEGUNDO NIVEL DE PARALELISMO → calcular tiempos en paralelo para cada itinerario
+      val tiemposPar =
+        todos.par.map(it => (it, tiempoEnAireTotal(it))).toList
+
+      // Ordenamos secuencialmente (colección ya pequeña)
+      val ordenados =
+        tiemposPar.sortBy(_._2).take(3).map(_._1)
+
+      ordenados
     }
   }
 
@@ -222,28 +251,40 @@ package object ItinerariosPar {
         case None => Int.MinValue // Si el aeropuerto no existe, ningún itinerario será válido
       }
 
-      // Filtrar solo los itinerarios que lleguen a tiempo (antes o en el momento de la cita)
-      val itinerariosValidos = todosItinerarios.filter { itinerario =>
-        val llegada = horaLlegada(itinerario)
-        // Consideramos llegadas hasta 24 horas después por si cruza medianoche
-        llegada <= horaCitaUTC || (llegada + 24 * 60) <= horaCitaUTC
+      // Función para calcular cuántos "días antes" llega un itinerario
+      // Retorna: 0 = mismo día, 1 = día anterior, 2 = dos días antes, etc.
+      def diasAntes(llegada: Int, cita: Int): Int = {
+        if (llegada <= cita) 0  // Llega el mismo día antes de la cita
+        else {
+          // Necesita llegar días antes
+          val diff = llegada - cita
+          val dias = (diff / (24 * 60)) + 1
+          dias
+        }
       }
 
 
-      // Si no hay itinerarios válidos, retornar lista vacía
-      if (itinerariosValidos.isEmpty) {
-        List()
-      } else {
-        // Ordenar por hora de salida descendente (más tarde primero)
-        // En caso de empate, preferir el de menor tiempo total
-        val ordenados = itinerariosValidos.sortBy { itinerario =>
-          (-horaSalida(itinerario), tiempoTotal(itinerario))
+      // Si no hay itinerarios, retornar lista vacía
+      if (todosItinerarios.isEmpty) List()
+      else {
+        // Calculamos los criterios de ordenamiento en paralelo
+        val tasks = todosItinerarios.map { it =>
+          task {
+            val llegada = horaLlegada(it)
+            val salida = horaSalida(it)
+            val duracion = tiempoTotal(it)
+            val dias = diasAntes(llegada, horaCitaUTC)
+
+            // Retornamos el itinerario junto con la tupla de comparación
+            (it, (dias, -salida, duracion))
+          }
         }
 
-        // Retornar el primero (el que sale más tarde)
-        ordenados.head
+        val resultados = tasks.map(_.join())
+
+        // Ordenamos por la tupla pre-calculada y devolvemos el mejor itinerario
+        resultados.sortBy(_._2).head._1
       }
     }
   }
-
 }
