@@ -1,6 +1,6 @@
-=============================================================================
+
 PROYECTO: PLANIFICACIÓN DE VUELOS (PROGRAMACIÓN FUNCIONAL Y CONCURRENTE)
-=============================================================================
+
 
 AUTORES:
 - Liseth Natalia Rivera (2223510)
